@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Number Guessing Game</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #ecf0f3;
+      color: #333;
+      text-align: center;
+      padding: 40px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    .game-container {
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 500px;
+      margin: auto;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      position: relative;
+      z-index: 1;
+    }
+
+    h1 {
+      color: #2c3e50;
+    }
+
+    label, select, input, button {
+      font-size: 16px;
+      margin: 10px 0;
+    }
+
+    input[type="number"], select {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      width: 80px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #3498db;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    .message {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+
+    .scoreboard {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #555;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .timer {
+      font-size: 18px;
+      margin-top: 10px;
+      color: #c0392b;
+    }
+
+    .emoji {
+      position: absolute;
+      font-size: 24px;
+      pointer-events: none;
+      animation: pop 1s ease-out forwards;
+      z-index: 1000;
+    }
+
+    @keyframes pop {
+      0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-100px) scale(1.5);
+      }
+    }
+  </style>
+</head>
+<body>
+
+    <a href="../HTML/scratch.html">Tennis</a> |
+    <a href="#">Play a Game</a> |
+    <a href="../index.html">My Resume</a> <br><br>
+
+  <div class="game-container">
+    <h1>🎯 Number Guessing Game</h1>
+
+    <label for="difficulty">Choose difficulty:</label>
+    <select id="difficulty">
+      <option value="easy">Easy (1–10)</option>
+      <option value="beginner">Beginner (1–50)</option>
+      <option value="hard">Hard (1–100)</option>
+    </select>
+    <button onclick="startGame()">Start Game</button>
+
+    <div id="gameArea" class="hidden">
+      <p id="rangeDisplay">I'm thinking of a number...</p>
+      <input type="number" id="guessInput" />
+      <br>
+      <button onclick="checkGuess()">Guess</button>
+      <div class="timer">⏱️ Time Left: <span id="timer">30</span> sec</div>
+      <div class="message" id="message"></div>
+    </div>
+
+    <div class="scoreboard">
+      <p>🏆 Wins: <span id="wins">0</span></p>
+      <p>💥 Losses: <span id="losses">0</span></p>
+    </div>
+  </div>
+
+  <script>
+    let secretNumber;
+    let attemptsLeft = 5;
+    let maxNumber = 10;
+    let wins = 0;
+    let losses = 0;
+    let countdown;
+    let timeLeft = 30;
+
+    function startGame() {
+      const difficulty = document.getElementById("difficulty").value;
+      const rangeDisplay = document.getElementById("rangeDisplay");
+      const gameArea = document.getElementById("gameArea");
+      const guessInput = document.getElementById("guessInput");
+
+      // Set difficulty range
+      if (difficulty === "easy") maxNumber = 10;
+      else if (difficulty === "beginner") maxNumber = 50;
+      else maxNumber = 100;
+
+      // Game setup
+      secretNumber = Math.floor(Math.random() * maxNumber) + 1;
+      attemptsLeft = 5;
+      timeLeft = 30;
+      updateTimer();
+
+      guessInput.value = "";
+      guessInput.disabled = false;
+      guessInput.setAttribute("min", 1);
+      guessInput.setAttribute("max", maxNumber);
+
+      document.getElementById("message").textContent = "";
+      rangeDisplay.textContent = `I'm thinking of a number between 1 and ${maxNumber}. You have 5 tries!`;
+      gameArea.classList.remove("hidden");
+
+      clearInterval(countdown);
+      countdown = setInterval(() => {
+        timeLeft--;
+        updateTimer();
+        if (timeLeft <= 0) {
+          endGame("⏰ Time's up! You lose.");
+          losses++;
+          document.getElementById("losses").textContent = losses;
+        }
+      }, 1000);
+
+      // Remove previous restart button
+      const oldBtn = document.getElementById("restartBtn");
+      if (oldBtn) oldBtn.remove();
+    }
+
+    function updateTimer() {
+      document.getElementById("timer").textContent = timeLeft;
+    }
+
+    function checkGuess() {
+      const guess = parseInt(document.getElementById("guessInput").value);
+      const messageEl = document.getElementById("message");
+
+      if (!guess || guess < 1 || guess > maxNumber) {
+        messageEl.textContent = `⛔ Enter a number between 1 and ${maxNumber}.`;
+        return;
+      }
+
+      if (guess === secretNumber) {
+        messageEl.textContent = `🎉 Correct! The number was ${secretNumber}. You win!`;
+        wins++;
+        document.getElementById("wins").textContent = wins;
+        emojiExplosion();
+        endGame();
+      } else {
+        attemptsLeft--;
+        if (attemptsLeft === 0) {
+          messageEl.textContent = `💥 Game over! The number was ${secretNumber}.`;
+          losses++;
+          document.getElementById("losses").textContent = losses;
+          endGame();
+        } else {
+          messageEl.textContent = guess > secretNumber 
+            ? `📉 Too high! ${attemptsLeft} tries left.` 
+            : `📈 Too low! ${attemptsLeft} tries left.`;
+        }
+      }
+    }
+
+    function endGame(optionalMessage = null) {
+      document.getElementById("guessInput").disabled = true;
+      clearInterval(countdown);
+
+      if (optionalMessage) {
+        document.getElementById("message").textContent = optionalMessage;
+      }
+
+      const restartBtn = document.createElement("button");
+      restartBtn.textContent = "🔄 Try Again";
+      restartBtn.id = "restartBtn";
+      restartBtn.onclick = startGame;
+      document.querySelector(".game-container").appendChild(restartBtn);
+    }
+
+    function emojiExplosion() {
+      const emojis = ['🎉', '🌟', '🔥', '🎾', '💫', '🥳', '✨'];
+      const numEmojis = 30;
+
+      for (let i = 0; i < numEmojis; i++) {
+        const emoji = document.createElement('div');
+        emoji.classList.add('emoji');
+        emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        emoji.style.left = `${Math.random() * 100}vw`;
+        emoji.style.top = `${Math.random() * 100}vh`;
+        emoji.style.fontSize = `${Math.random() * 20 + 20}px`;
+        document.body.appendChild(emoji);
+        setTimeout(() => emoji.remove(), 1000);
+      }
+    }
+  </script>
+
+</body>
+</html>
